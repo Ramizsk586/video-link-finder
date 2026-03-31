@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Video Link Scraper</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;700;800&display=swap');
+
+    :root {
+      --bg: #0d0d0f;
+      --surface: #161618;
+      --surface-hover: #1e1e22;
+      --border: #2a2a2e;
+      --accent: #ff5e00;
+      --accent-dim: rgba(255, 94, 0, 0.15);
+      --accent-glow: rgba(255, 94, 0, 0.4);
+      --text: #f0ede8;
+      --text-secondary: #b0adb0;
+      --muted: #6b6872;
+      --success: #00e5a0;
+      --error: #ff4757;
+      --mono: 'JetBrains Mono', monospace;
+      --display: 'Syne', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 420px;
+      min-height: 100px;
+      max-height: 580px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      overflow: hidden;
+    }
+
+    /* HEADER */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, #1a1008 0%, var(--surface) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 20% 50%, var(--accent-dim) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 16px var(--accent-glow);
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-family: var(--display);
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .logo-sub {
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      margin-top: 2px;
+      text-transform: uppercase;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 6px;
+      position: relative;
+    }
+
+    .btn-icon {
+      width: 30px;
+      height: 30px;
+      border: 1px solid var(--border);
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      transition: all 0.15s;
+      font-size: 14px;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .btn-icon.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    /* URL INPUT */
+    .url-input-section {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .url-input-wrapper {
+      display: flex;
+      gap: 8px;
+    }
+
+    .url-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 11px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .url-input::placeholder { color: var(--muted); }
+
+    .url-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-dim);
+    }
+
+    .url-input.error {
+      border-color: var(--error);
+      box-shadow: 0 0 0 2px rgba(255, 71, 87, 0.15);
+    }
+
+    .btn-scrape {
+      background: var(--accent);
+      border: none;
+      border-radius: 6px;
+      color: #000;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 8px 16px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: all 0.15s;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .btn-scrape:hover {
+      box-shadow: 0 0 12px var(--accent-glow);
+      transform: translateY(-1px);
+    }
+
+    .btn-scrape:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 8px 16px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+    }
+
+    .tab:hover {
+      color: var(--text);
+      background: var(--surface-hover);
+    }
+
+    .tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* TOOLBAR */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .count-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .count-num {
+      font-family: var(--display);
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .filter-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 10px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 11px;
+      width: 130px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .filter-input::placeholder { color: var(--muted); }
+
+    .filter-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-dim);
+    }
+
+    /* LINK LIST */
+    .list {
+      overflow-y: auto;
+      max-height: 380px;
+    }
+
+    .list::-webkit-scrollbar { width: 4px; }
+    .list::-webkit-scrollbar-track { background: transparent; }
+    .list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .list::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    .link-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.12s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .link-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--accent);
+      transform: scaleY(0);
+      transition: transform 0.15s;
+    }
+
+    .link-item:hover {
+      background: var(--accent-dim);
+    }
+
+    .link-item:hover::before {
+      transform: scaleY(1);
+    }
+
+    .link-item:last-child { border-bottom: none; }
+
+    .ext-badge {
+      flex-shrink: 0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      min-width: 36px;
+      text-align: center;
+    }
+
+    .ext-badge.mp4 { background: #00e5a0; color: #000; }
+    .ext-badge.webm { background: #7c4dff; color: #fff; }
+    .ext-badge.m3u8 { background: #ffab00; color: #000; }
+    .ext-badge.mov { background: #00bcd4; color: #000; }
+    .ext-badge.avi { background: #ff5252; color: #fff; }
+    .ext-badge.mkv { background: #e040fb; color: #fff; }
+    .ext-badge.flv { background: #ff6e40; color: #000; }
+    .ext-badge.default { background: var(--accent); color: #000; }
+
+    .link-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .link-name {
+      color: var(--text);
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .link-url {
+      color: var(--muted);
+      font-size: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .link-actions {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .link-item:hover .link-actions { opacity: 1; }
+
+    .action-btn {
+      width: 24px;
+      height: 24px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      transition: all 0.12s;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .action-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .action-btn.copy-done {
+      border-color: var(--success);
+      color: var(--success);
+    }
+
+    /* EMPTY STATE */
+    .empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 36px 24px;
+      gap: 10px;
+      text-align: center;
+    }
+
+    .empty-icon {
+      font-size: 36px;
+      opacity: 0.3;
+    }
+
+    .empty-title {
+      font-family: var(--display);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .empty-sub {
+      font-size: 10px;
+      color: var(--muted);
+      opacity: 0.7;
+      max-width: 220px;
+      line-height: 1.5;
+    }
+
+    /* FOOTER */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+    }
+
+    .footer-info {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    .btn-open-all {
+      background: var(--accent);
+      border: none;
+      border-radius: 6px;
+      color: #000;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 5px 12px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: all 0.15s;
+      text-transform: uppercase;
+    }
+
+    .btn-open-all:hover {
+      box-shadow: 0 0 12px var(--accent-glow);
+      transform: translateY(-1px);
+    }
+
+    .btn-open-all:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-copy-all {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 5px 12px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: all 0.15s;
+      text-transform: uppercase;
+      margin-right: 6px;
+    }
+
+    .btn-copy-all:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-copy-all:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .footer-actions {
+      display: flex;
+      align-items: center;
+    }
+
+    /* LOADING */
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* SCAN ANIMATION */
+    .link-item {
+      animation: fadeSlide 0.2s ease both;
+    }
+
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateX(-8px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: var(--success);
+      color: #000;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 20px;
+      opacity: 0;
+      transition: all 0.2s;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 100;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast.error {
+      background: var(--error);
+      color: #fff;
+    }
+
+    /* Status bar */
+    .status-bar {
+      padding: 6px 16px;
+      font-size: 10px;
+      color: var(--muted);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    .status-dot.active {
+      background: var(--success);
+      box-shadow: 0 0 6px var(--success);
+    }
+
+    .status-dot.error {
+      background: var(--error);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">🎬</div>
+      <div>
+        <div class="logo-text">Video Scraper</div>
+        <div class="logo-sub">Find all video links</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" id="btnHighlight" title="Highlight links on page">🔦</button>
+      <button class="btn-icon" id="btnRefresh" title="Re-scan page">↺</button>
+    </div>
+  </div>
+
+  <div class="url-input-section">
+    <div class="url-input-wrapper">
+      <input class="url-input" id="urlInput" placeholder="Enter URL to scrape (or leave blank for current tab)" />
+      <button class="btn-scrape" id="btnScrape">Scrape</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="current">Current Tab</button>
+    <button class="tab" data-tab="custom">Custom URL</button>
+  </div>
+
+  <div id="statusBar" class="status-bar" style="display:none;">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText"></span>
+  </div>
+
+  <div id="main">
+    <div class="loading">
+      <div class="spinner"></div>
+      Scanning for video links…
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
